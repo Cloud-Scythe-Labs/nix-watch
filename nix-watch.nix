@@ -149,6 +149,9 @@ let
 
     # Stop the currently running command if any
     stop_running_command() {
+        if [ "$CLEAR" == true ]; then
+            clear
+        fi
         if [ -f "$PID_FILE" ]; then
             previous_pid=$(cat "$PID_FILE")
             debug "Checking status of stale PID $previous_pid"
@@ -182,10 +185,6 @@ let
             debug "Setting modification time to: ''${ANSI_BLUE}$current_mod_time''${ANSI_RESET}"
             debug "Previously modified at: ''${ANSI_BLUE}$last_mod_time''${ANSI_RESET}"
             last_mod_time="$current_mod_time"
-
-            if [ "$CLEAR" == true ]; then
-                clear
-            fi
 
             # Execute the command in the background and capture its PID
             # TODO: making changes consecutively produces an error: interrupted by the user
