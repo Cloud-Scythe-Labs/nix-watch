@@ -2,6 +2,10 @@
 
 Nix Watch watches over your project's source for changes, and runs Nix commands when they occur.
 
+
+https://github.com/user-attachments/assets/28a6b128-6297-46c6-a47b-d93e86af96b4
+
+
 ## Features
 
 `nix-watch` is inspired by [`cargo-watch`](https://crates.io/crates/cargo-watch), and can do most things it can do.
