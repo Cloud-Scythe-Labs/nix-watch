@@ -114,17 +114,20 @@ let
 
     # TODO: handle remaining args that will be passed to the shell
     # Remaining arguments are considered as command arguments
-    COMMAND_ARGS=("$@")
-    command_args="[''${COMMAND_ARGS[@]}]"
-    debug "Remaining shell args: ''${ANSI_BLUE}$command_args''${ANSI_RESET}"
+    SHELL_ARGS=("$@")
+    shell_args="[''${SHELL_ARGS[@]}]"
+    debug "Remaining shell args: ''${ANSI_BLUE}$shell_args''${ANSI_RESET}"
 
-    # Construct the final nix command
+    # Construct the final nix command, passing thru the shell args
     if [ "$COMMAND" == "nix" ]; then
         COMMAND+=" flake check"
     fi
     if [ "$PRINT_BUILD_LOGS" == true ]; then
         COMMAND+=" -L"
     fi
+    for shell_arg in "''${SHELL_ARGS[@]}"; do
+        COMMAND+=" $shell_arg"
+    done
     debug "Command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
 
     # Resolve the watch directory to its absolute path
