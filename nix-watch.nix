@@ -138,7 +138,7 @@ let
         # Remaining arguments are considered as command arguments
         SHELL_ARGS+=("$@")
         shell_args="[''${SHELL_ARGS[@]}]"
-        debug "Additional arguments will be passed to shell: ''${ANSI_BLUE}$shell_args''${ANSI_RESET}"
+        debug "The following arguments will be passed to shell: ''${ANSI_BLUE}$shell_args''${ANSI_RESET}"
 
         # Construct the final nix command, passing thru the shell args
         if [ "$COMMAND" == "nix" ]; then
