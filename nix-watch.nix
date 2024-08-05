@@ -33,11 +33,9 @@ let
             ${echo} "    -L, --print-build-logs        Print full build logs on standard error, equal to including the nix '-L' option."
             ${echo} "    -C, --workdir <workdir>       Change working directory before running command [default: current directory]"
             ${echo} ""
-            ${echo} "Nix commands (-x) are always executed before shell commands (-s). You can use the \`-- command\`
-    style instead, note you'll need to use full commands, it won't prefix \`nix\` for you.
+            ${echo} "Nix commands (-x) are always executed before shell commands (-s). You can use the \`-- command\` style instead, note you'll need to use full commands, it won't prefix \`nix\` for you.
 
-    By default, the workspace directories of your project and all local dependencies are watched,
-    except for the result/ and .git/ folders."
+    By default, the workspace directories of your project and all local dependencies are watched, except for the result/ and .git/ folders."
 
             exit 1
         }
@@ -134,8 +132,7 @@ let
             esac
         done
 
-        # TODO: handle remaining args that will be passed to the shell
-        # Remaining arguments are considered as command arguments
+        # Remaining arguments are considered as shell arguments
         SHELL_ARGS+=("$@")
         shell_args="[''${SHELL_ARGS[@]}]"
         debug "The following arguments will be passed to shell: ''${ANSI_BLUE}$shell_args''${ANSI_RESET}"
