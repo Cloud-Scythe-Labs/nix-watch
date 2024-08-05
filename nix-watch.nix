@@ -201,12 +201,16 @@ let
             # Get the current modification time of the watched directory
             current_mod_time=$(${stat} -c %Y "$WATCH_DIR")
 
+            debug "Checking modification time for changes"
+            debug "Last known mod_time: ''${ANSI_BLUE}$last_mod_time''${ANSI_RESET}"
+            debug "Recieved mod_time for comparison: ''${ANSI_BLUE}$current_mod_time''${ANSI_RESET}"
             # Check if the modification time has changed
             if [ "$current_mod_time" -ne "$last_mod_time" ]; then
                 debug "Modification time has changed, updating mod_time variable..."
                 debug "Setting modification time to: ''${ANSI_BLUE}$current_mod_time''${ANSI_RESET}"
                 debug "Previously modified at: ''${ANSI_BLUE}$last_mod_time''${ANSI_RESET}"
                 last_mod_time="$current_mod_time"
+                debug "mod_time set to: ''${ANSI_BLUE}$last_mod_time''${ANSI_RESET}"
 
                 # Execute the command in the background and capture its PID
                 if [ "$NO_RESTART" == true ]; then
@@ -229,6 +233,9 @@ let
                 # Save the PID to the PID_FILE
                 ${echo} $command_pid > "$PID_FILE"
                 ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
+            else
+                debug "Modification time has not changed: ''${ANSI_BLUE}$last_mod_time''${ANSI_RESET}"
+                debug "Skipping..."
             fi
         }
 
@@ -243,12 +250,14 @@ let
         # Watch the directory for changes on both Linux and macOS
         nix_watch() {
             if [ "$POSTPONE" == false ]; then
+                debug "Postpone flag was unset, attempting to run command."
                 # Run the command on start, then wait so fswatch doesn't think
                 # that changes were made which causing a second run_command to trigger
                 run_command & sleep 1
             fi
 
             eval "$FSWATCH_CMD" | while read -d "" event; do
+                debug "Watcher detected changes, found event: ''${ANSI_BLUE}$event''${ANSI_RESET}"
                 run_command
             done
         }
