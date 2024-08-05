@@ -187,8 +187,6 @@ let
             last_mod_time="$current_mod_time"
 
             # Execute the command in the background and capture its PID
-            # TODO: making changes consecutively produces an error: interrupted by the user
-            # but in this case this is not an error the user should see.
             if [ "$NO_RESTART" == true ]; then
                 current_pid=$(cat "$PID_FILE")
                 if [ -f "$PID_FILE" ] && kill -0 "$current_pid" 2>/dev/null; then
