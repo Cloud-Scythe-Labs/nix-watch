@@ -13,7 +13,17 @@
         nix-watch = pkgs.callPackage ./nix-watch.nix { };
       in
       {
-        packages.default = nix-watch.nixWatchBin;
+        inherit nix-watch;
+        packages = {
+          default = nix-watch.nixWatchBin;
+          inherit (nix-watch)
+            fswatch
+            getopt
+            coreutils
+            ncurses
+            nixWatchBin
+            ;
+        };
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nil
