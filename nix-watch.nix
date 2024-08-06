@@ -1,4 +1,4 @@
-{ stdenv, writeShellScriptBin, fswatch, getopt, coreutils, ncurses }:
+{ stdenv, writeShellScriptBin, fswatch, getopt, coreutils, ncurses, jq }:
 let
   fswatch' = "${fswatch}/bin/fswatch";
   getopt' = "${getopt}/bin/getopt";
@@ -6,6 +6,7 @@ let
   pwd = "${coreutils}/bin/pwd";
   stat = "${coreutils}/bin/stat";
   clear = "${ncurses}/bin/clear";
+  jq' = "${jq}/bin/jq";
 
   watchRecursively = if stdenv.isDarwin then "-r" else "";
 
@@ -42,16 +43,20 @@ let
             exit 1
         }
 
+        # Print a debug message
         debug() {
             if [ "$DEBUG" == true ]; then
                 local message="$1"
                 ${echo} -e "''${ANSI_GREEN}debug:''${ANSI_RESET} ''${message}"
             fi
         }
+        # Print an error message
         error() {
             local message="$1"
             ${echo} -e "''${ANSI_RED}error:''${ANSI_RESET} ''${message}"
         }
+        # Remove quotations surrounding a string. This is useful for injecting
+        # arguments from nix directly into bash.
         strip_quotes() {
             local input="$1"
             echo "''${input//\"/}"
@@ -172,8 +177,37 @@ let
         fi
 
         # Temporary file to store the PID of the running command
-        PID_FILE="/tmp/$(basename "$0").pid"
+        PID_FILE="/tmp/nix-watch/$(basename "$0").pid"
         debug "PID filepath: ''${ANSI_BLUE}$PID_FILE''${ANSI_RESET}"
+
+        TEMP_LOCK_FILE="/tmp/nix-watch/lock.tmp"
+        # Lock file path to store file and directory modification timestamps
+        LOCK_FILE="/tmp/nix-watch/$(basename "$0").lock"
+        debug "Lock file filepath: ''${ANSI_BLUE}$LOCK_FILE''${ANSI_RESET}"
+        # Initialize the lock file
+        init_lock_file() {
+            debug "Initializing lock file..."
+            ${echo} "{}" > $LOCK_FILE
+        }
+        # Get the modification time of a file
+        get_mod_time() {
+            local file=$1
+            ${stat} -c %Y "$file" 2>/dev/null || ${echo} 0
+        }
+        # Update the lock file with the new modification time
+        update_lock_file() {
+            local file=$1
+            local mod_time=$2
+
+            ${jq'} --arg file "$file" --argjson mod_time "$mod_time" \
+               '.[$file] = $mod_time' "$LOCK_FILE" > "$TEMP_LOCK_FILE"
+            mv "$TEMP_LOCK_FILE" "$LOCK_FILE"
+        }
+        # Read the modification time from the lock file
+        get_lock_mod_time() {
+            local file=$1
+            ${jq'} --arg file "$file" '.[$file] // 0' "$LOCK_FILE"
+        }
 
         # Stop the currently running command if any
         stop_running_command() {
@@ -201,27 +235,27 @@ let
         }
 
         run_command() {
-                # Execute the command in the background and capture its PID
-                if [ "$NO_RESTART" == true ]; then
-                    current_pid=$(cat "$PID_FILE")
-                    if [ -f "$PID_FILE" ] && kill -0 "$current_pid" 2>/dev/null; then
-                        debug "Attempted to start new process, but PID $current_pid is still running..."
-                        return
-                    fi
-                else
-                    stop_running_command
+            # Execute the command in the background and capture its PID
+            if [ "$NO_RESTART" == true ]; then
+                current_pid=$(cat "$PID_FILE")
+                if [ -f "$PID_FILE" ] && kill -0 "$current_pid" 2>/dev/null; then
+                    debug "Attempted to start new process, but PID $current_pid is still running..."
+                    return
                 fi
+            else
+                stop_running_command
+            fi
 
-                cd $WATCH_DIR
-                current_dir=$(${pwd})
-                debug "Current path is: ''${ANSI_BLUE}$current_dir''${ANSI_RESET}"
-                debug "Running command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
-                eval $COMMAND &
-                command_pid=$!
+            cd $WATCH_DIR
+            current_dir=$(${pwd})
+            debug "Current path is: ''${ANSI_BLUE}$current_dir''${ANSI_RESET}"
+            debug "Running command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
+            eval $COMMAND &
+            command_pid=$!
 
-                # Save the PID to the PID_FILE
-                ${echo} $command_pid > "$PID_FILE"
-                ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
+            # Save the PID to the PID_FILE
+            ${echo} $command_pid > "$PID_FILE"
+            ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
         }
 
         # Construct the fswatch command with ignored directories
@@ -238,14 +272,35 @@ let
 
         # Watch the directory for changes on both Linux and macOS
         nix_watch() {
-            # while true; do
-            eval "$FSWATCH_CMD" | while read -d "" event; do
-                debug "Watcher detected changes, found event: ''${ANSI_BLUE}$event''${ANSI_RESET}"
+            while true; do
+                eval "$FSWATCH_CMD" | while read -d "" event; do
+                    debug "Detected changes in: ''${ANSI_BLUE}$event''${ANSI_RESET}"
+                    current_mod_time=$(get_mod_time "$event")
+                    last_mod_time=$(get_lock_mod_time "$event")
+
+                    if [ "$current_mod_time" -ne "$last_mod_time" ]; then
+                        debug "Modification time for ''${ANSI_BLUE}$event''${ANSI_RESET} has changed."
+                        update_lock_file "$event" "$current_mod_time"
+                        break
+                    fi
+                done
                 run_command & sleep 1
             done
-                # sleep 1
-            # done
         }
+
+        shutdown() {
+            debug "Received termination signal, cleaning up..."
+            rm -f $PID_FILE
+            if [ "$DEBUG" == false ]; then
+                rm -f $LOCK_FILE
+            fi
+            exit 0
+        }
+
+        trap shutdown SIGINT SIGTERM
+
+        mkdir -p /tmp/nix-watch
+        init_lock_file
 
         if [ "$POSTPONE" == false ]; then
             debug "Postpone flag was unset, attempting to run command."
@@ -258,6 +313,6 @@ let
   '';
 in
 {
-  inherit fswatch getopt coreutils ncurses nixWatchBin;
-  devTools = [ fswatch getopt coreutils ncurses nixWatchBin ];
+  inherit fswatch getopt coreutils ncurses jq nixWatchBin;
+  devTools = [ fswatch getopt coreutils ncurses jq nixWatchBin ];
 }
