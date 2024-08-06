@@ -37,8 +37,6 @@ By default, the workspace directories of your project and all local dependencies
 
 ## Systems
 
-MacOS is currently b0rked see [issue #4](https://github.com/Cloud-Scythe-Labs/nix-watch/issues/4) for details. Feel free to open bug fixes for any of the points listed there, or report errors in new issues using the darwin tag.
-
 - x86_64-linux
 - x86_64-darwin
 - aarch64-linux
