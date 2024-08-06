@@ -187,7 +187,7 @@ let
         # Initialize the lock file
         init_lock_file() {
             debug "Initializing lock file..."
-            ${echo} "{}" > $LOCK_FILE
+            ${echo} "{ \"$WATCH_DIR\": 0 }" > $LOCK_FILE
         }
         # Get the modification time of a file
         get_mod_time() {
@@ -211,55 +211,60 @@ let
 
         # Stop the currently running command if any
         stop_running_command() {
-            if [ "$CLEAR" == true ]; then
-                ${clear}
-            fi
             if [ -f "$PID_FILE" ]; then
                 previous_pid=$(cat "$PID_FILE")
                 debug "Checking status of PID $previous_pid"
                 if kill -0 "$previous_pid" 2> /dev/null; then
                     debug "Terminating process (PID: $previous_pid)..."
-                    kill -TERM "$previous_pid" 2> /dev/null
-                    sleep 1 # Allow some time for graceful termination
+                    pkill -TERM -P "$previous_pid" 2> /dev/null
+                    sleep 1
                     if kill -0 "$previous_pid" 2> /dev/null; then
                         error "Process (PID: $previous_pid) did not terminate. Forcing termination..."
-                        kill -KILL "$previous_pid" 2> /dev/null
-                        sleep 2 # Allow some time for forceful termination
+                        pkill -KILL -P "$previous_pid" 2> /dev/null
                     fi
-                else
-                    debug "Attempted to kill process which is no longer running: (PID $previous_pid)"
                 fi
-                # debug "Removing stale PID $previous_pid"
-                # rm -f "$PID_FILE"
+            fi
+            if [ "$CLEAR" == true ]; then
+                ${clear}
             fi
         }
 
         run_command() {
-            # Execute the command in the background and capture its PID
-            if [ "$NO_RESTART" == true ]; then
-                current_pid=$(cat "$PID_FILE")
-                if [ -f "$PID_FILE" ] && kill -0 "$current_pid" 2>/dev/null; then
-                    debug "Attempted to start new process, but PID $current_pid is still running..."
-                    return
+            local event=$1
+            current_mod_time=$(get_mod_time "$event")
+            last_mod_time=$(get_lock_mod_time "$event")
+
+            if [ "$current_mod_time" -ne "$last_mod_time" ]; then
+                debug "Modification time for ''${ANSI_BLUE}$event''${ANSI_RESET} has changed."
+                update_lock_file "$event" "$current_mod_time"
+
+
+                # Execute the command in the background and capture its PID
+                if [ "$NO_RESTART" == true ]; then
+                    current_pid=$(cat "$PID_FILE")
+                    if [ -f "$PID_FILE" ] && kill -0 "$current_pid" 2>/dev/null; then
+                        debug "Attempted to start new process, but PID $current_pid is still running..."
+                        return
+                    fi
+                else
+                    stop_running_command
                 fi
-            else
-                stop_running_command
+
+                cd $WATCH_DIR
+                current_dir=$(${pwd})
+                debug "Current path is: ''${ANSI_BLUE}$current_dir''${ANSI_RESET}"
+                debug "Running command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
+                eval $COMMAND &
+                command_pid=$!
+
+                # Save the PID to the PID_FILE
+                ${echo} $command_pid > "$PID_FILE"
+                ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
             fi
-
-            cd $WATCH_DIR
-            current_dir=$(${pwd})
-            debug "Current path is: ''${ANSI_BLUE}$current_dir''${ANSI_RESET}"
-            debug "Running command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
-            eval $COMMAND &
-            command_pid=$!
-
-            # Save the PID to the PID_FILE
-            ${echo} $command_pid > "$PID_FILE"
-            ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
         }
 
         # Construct the fswatch command with ignored directories
-        FSWATCH_CMD="${fswatch'} -0"
+        FSWATCH_CMD="${fswatch'} -1"
         for pattern in "''${IGNORE_PATTERNS[@]}"; do
             FSWATCH_CMD+=" -e '$pattern'"
         done
@@ -272,20 +277,10 @@ let
 
         # Watch the directory for changes on both Linux and macOS
         nix_watch() {
-            while true; do
-                eval "$FSWATCH_CMD" | while read -d "" event; do
-                    debug "Detected changes in: ''${ANSI_BLUE}$event''${ANSI_RESET}"
-                    current_mod_time=$(get_mod_time "$event")
-                    last_mod_time=$(get_lock_mod_time "$event")
-
-                    if [ "$current_mod_time" -ne "$last_mod_time" ]; then
-                        debug "Modification time for ''${ANSI_BLUE}$event''${ANSI_RESET} has changed."
-                        update_lock_file "$event" "$current_mod_time"
-                        break
-                    fi
-                done
-                run_command & sleep 1
-            done
+            eval "$FSWATCH_CMD" | if read -r event; then
+                debug "Detected changes in: ''${ANSI_BLUE}$event''${ANSI_RESET}"
+                run_command "$event"
+            fi
         }
 
         shutdown() {
@@ -301,15 +296,18 @@ let
 
         mkdir -p /tmp/nix-watch
         init_lock_file
+        debug "Initialized lock file: ''${ANSI_BLUE}$(cat $LOCK_FILE)''${ANSI_RESET}"
 
         if [ "$POSTPONE" == false ]; then
             debug "Postpone flag was unset, attempting to run command."
             # Run the command on start, then wait so fswatch doesn't think
             # that changes were made which causing a second run_command to trigger
-            run_command & sleep 1
+            run_command "$WATCH_DIR" & sleep 1
         fi
 
-        nix_watch
+        while true; do
+            nix_watch
+        done
   '';
 in
 {
