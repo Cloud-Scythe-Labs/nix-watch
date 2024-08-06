@@ -8,8 +8,6 @@ let
   clear = "${ncurses}/bin/clear";
   jq' = "${jq}/bin/jq";
 
-  watchRecursively = if stdenv.isDarwin then "-r" else "";
-
   nixWatchBin = writeShellScriptBin "nix-watch" ''
         # Define some colors that will help distinguish messages
         ANSI_RED='\033[0;31m'
@@ -268,10 +266,6 @@ let
         for pattern in "''${IGNORE_PATTERNS[@]}"; do
             FSWATCH_CMD+=" -e '$pattern'"
         done
-        watch_recursively=$(strip_quotes ${watchRecursively})
-        if [[ -n "$watch_recursively" ]]; then
-            FSWATCH_CMD+=" $watch_recursively"
-        fi
         FSWATCH_CMD+=" $WATCH_DIR"
         debug "fswatch command: ''${ANSI_BLUE}$FSWATCH_CMD''${ANSI_RESET}"
 
