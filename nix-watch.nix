@@ -1,4 +1,4 @@
-{ stdenv, writeShellScriptBin, fswatch, getopt, coreutils, ncurses, jq }:
+{ writeShellScriptBin, fswatch, getopt, coreutils, ncurses, jq }:
 let
   fswatch' = "${fswatch}/bin/fswatch";
   getopt' = "${getopt}/bin/getopt";
