@@ -52,6 +52,10 @@ let
             local message="$1"
             ${echo} -e "''${ANSI_RED}error:''${ANSI_RESET} ''${message}"
         }
+        strip_quotes() {
+            local input="$1"
+            echo "''${input//\"/}"
+        }
 
         # Initialize variables with default values
         COMMAND="nix"
@@ -178,7 +182,7 @@ let
             fi
             if [ -f "$PID_FILE" ]; then
                 previous_pid=$(cat "$PID_FILE")
-                debug "Checking status of stale PID $previous_pid"
+                debug "Checking status of PID $previous_pid"
                 if kill -0 "$previous_pid" 2> /dev/null; then
                     debug "Terminating process (PID: $previous_pid)..."
                     kill -TERM "$previous_pid" 2> /dev/null
@@ -191,8 +195,8 @@ let
                 else
                     debug "Attempted to kill process which is no longer running: (PID $previous_pid)"
                 fi
-                debug "Removing stale PID $previous_pid"
-                rm -f "$PID_FILE"
+                # debug "Removing stale PID $previous_pid"
+                # rm -f "$PID_FILE"
             fi
         }
 
@@ -220,28 +224,27 @@ let
                 ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
         }
 
-        strip_quotes() {
-            local input="$1"
-            echo "''${input//\"/}"
-        }
-
         # Construct the fswatch command with ignored directories
-        FSWATCH_CMD="${fswatch'} -1 $(strip_quotes ${watchRecursively})"
+        FSWATCH_CMD="${fswatch'} -0"
         for pattern in "''${IGNORE_PATTERNS[@]}"; do
             FSWATCH_CMD+=" -e '$pattern'"
         done
+        watch_recursively=$(strip_quotes ${watchRecursively})
+        if [[ -n "$watch_recursively" ]]; then
+            FSWATCH_CMD+=" $watch_recursively"
+        fi
         FSWATCH_CMD+=" $WATCH_DIR"
         debug "fswatch command: ''${ANSI_BLUE}$FSWATCH_CMD''${ANSI_RESET}"
 
         # Watch the directory for changes on both Linux and macOS
         nix_watch() {
-            while true; do
-                eval "$FSWATCH_CMD" | if read -r event; then
-                    debug "Watcher detected changes, found event: ''${ANSI_BLUE}$event''${ANSI_RESET}"
-                    run_command
-                fi
-                sleep 1
+            # while true; do
+            eval "$FSWATCH_CMD" | while read -d "" event; do
+                debug "Watcher detected changes, found event: ''${ANSI_BLUE}$event''${ANSI_RESET}"
+                run_command & sleep 1
             done
+                # sleep 1
+            # done
         }
 
         if [ "$POSTPONE" == false ]; then
