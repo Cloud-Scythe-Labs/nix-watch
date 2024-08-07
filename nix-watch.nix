@@ -228,6 +228,10 @@ let
             DEBUG=$(convert_int_to_bool $NIX_WATCH_DEBUG)
         fi
 
+        if [[ "$POSTPONE" == false && -n "$NIX_WATCH_POSTPONE" ]]; then
+            POSTPONE=$(convert_int_to_bool $NIX_WATCH_POSTPONE)
+        fi
+
         # Temporary file to store the PID of the running command
         PID_FILE="/tmp/nix-watch/$(basename "$0").pid"
         debug "PID filepath: ''${ANSI_BLUE}$PID_FILE''${ANSI_RESET}"
