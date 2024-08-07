@@ -77,6 +77,17 @@ let
             done
             COMMAND=("''${processed_command[@]}")
         }
+        convert_int_to_bool() {
+            local maybe_int="$1"
+
+            if [[ "$maybe_int" == 0 ]]; then
+                ${echo} false
+            elif [[ "$maybe_int" == 1 ]]; then
+                ${echo} true
+            else
+                ${echo} "$maybe_int"
+            fi
+        }
 
         # Initialize variables with default values
         COMMAND=()
@@ -191,8 +202,12 @@ let
         fi
         debug "Command: ''${ANSI_BLUE}''${COMMAND[*]}''${ANSI_RESET}"
 
-        # Resolve the watch directory to its absolute path
+        # Resolve the watch directory to its absolute path and ensure it exists
         WATCH_DIR=$(realpath "$WATCH_DIR")
+        if [ ! -d "$WATCH_DIR" ]; then
+            error "Directory '$WATCH_DIR' does not exist."
+            exit 1
+        fi
         debug "Watching directory: ''${ANSI_BLUE}$WATCH_DIR''${ANSI_RESET}"
 
         if [ "$IGNORE_NOTHING" == true ]; then
@@ -200,11 +215,9 @@ let
         fi
         ignore_patterns="[''${IGNORE_PATTERNS[@]}]"
         debug "The following patterns will be ignored: ''${ANSI_BLUE}$ignore_patterns''${ANSI_RESET}"
-    
-        # Ensure the directory exists
-        if [ ! -d "$WATCH_DIR" ]; then
-            error "Directory '$WATCH_DIR' does not exist."
-            exit 1
+
+        if [[ "$DEBUG" == false && -n "$NIX_WATCH_DEBUG" ]]; then
+            DEBUG=$(convert_int_to_bool $NIX_WATCH_DEBUG)
         fi
 
         # Temporary file to store the PID of the running command
