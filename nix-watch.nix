@@ -28,7 +28,7 @@ let
             ${echo} "    --postpone          Postpone first run until a file changes"
             ${echo} ""
             ${echo} "OPTIONS:"
-            ${echo} "    -x, --exec <cmd>...           Nix command(s) to execute on changes [default: \"flake check\"]."
+            ${echo} "    -x, --exec <cmd>              Nix command to execute on changes [default: \"nix flake check\"]."
             ${echo} "    -s, --shell <cmd>...          Shell command(s) to execute on changes."
             ${echo} "    -i, --ignore <pattern>...     Ignore a regex pattern [default: ["result*" ".*\.git"]]"
             ${echo} "    -L, --print-build-logs        Print full build logs on standard error, equal to including the nix '-L' option."
@@ -57,11 +57,29 @@ let
         # arguments from nix directly into bash.
         strip_quotes() {
             local input="$1"
-            echo "''${input//\"/}"
+            ${echo} "''${input//\"/}"
+        }
+        # Function to process and prepare the command array
+        process_command() {
+            local processed_command=()
+        
+            # Loop through each element in the COMMAND array
+            for cmd_str in "''${COMMAND[@]}"; do
+                # Check if the string contains spaces
+                if [[ "$cmd_str" == *" "* ]]; then
+                    # Split the string by spaces and append to the processed_command array
+                    IFS=' ' read -r -a split_args <<< "$cmd_str"
+                    processed_command+=("''${split_args[@]}")
+                else
+                    # If no spaces, just append the string
+                    processed_command+=("$cmd_str")
+                fi
+            done
+            COMMAND=("''${processed_command[@]}")
         }
 
         # Initialize variables with default values
-        COMMAND="nix"
+        COMMAND=()
         SHELL_ARGS=()
         CLEAR=false
         IGNORE_NOTHING=false
@@ -105,7 +123,7 @@ let
                 -x | --exec)
                     shift
                     while [[ "$1" != -* && "$1" != --* && -n "$1" ]]; do
-                        COMMAND+=" $1"
+                        COMMAND+=("$1")
                         shift
                     done
                     ;;
@@ -147,16 +165,31 @@ let
         debug "The following arguments will be passed to shell: ''${ANSI_BLUE}$shell_args''${ANSI_RESET}"
 
         # Construct the final nix command, passing thru the shell args
-        if [ "$COMMAND" == "nix" ]; then
-            COMMAND+=" flake check"
+        DEFAULT_COMMAND=(nix flake check)
+        if [[ -z ''${COMMAND[@]} ]]; then
+            # If COMMAND is empty, check for env var or use default
+            if [[ -n "$NIX_WATCH_COMMAND" ]]; then
+                COMMAND=("$NIX_WATCH_COMMAND")
+                process_command
+            else
+                COMMAND="''${DEFAULT_COMMAND[@]}"
+            fi
+        else
+            if [[ ! "''${COMMAND[*]}" =~ ^nix ]]; then
+                local with_prefix=(nix)
+                with_prefix+=("''${COMMAND[@]}")
+                COMMAND=("''${with_prefix[@]}")
+            fi
+            process_command
         fi
         if [ "$PRINT_BUILD_LOGS" == true ]; then
-            COMMAND+=" -L"
+            COMMAND+=("-L")
         fi
         if [[ -n ''${SHELL_ARGS[@]} ]]; then
-            COMMAND="$COMMAND && ''${SHELL_ARGS[@]}"
+            COMMAND+=("&&")
+            COMMAND+=("''${SHELL_ARGS[@]}")
         fi
-        debug "Command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
+        debug "Command: ''${ANSI_BLUE}''${COMMAND[*]}''${ANSI_RESET}"
 
         # Resolve the watch directory to its absolute path
         WATCH_DIR=$(realpath "$WATCH_DIR")
@@ -251,13 +284,13 @@ let
                 cd $WATCH_DIR
                 current_dir=$(${pwd})
                 debug "Current path is: ''${ANSI_BLUE}$current_dir''${ANSI_RESET}"
-                debug "Running command: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET}"
-                eval $COMMAND &
+                debug "Running command: ''${ANSI_BLUE}''${COMMAND[*]}''${ANSI_RESET}"
+                eval "''${COMMAND[@]}" &
                 command_pid=$!
 
                 # Save the PID to the PID_FILE
                 ${echo} $command_pid > "$PID_FILE"
-                ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}$COMMAND''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
+                ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}''${COMMAND[*]}''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
             fi
         }
 
