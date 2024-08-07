@@ -21,6 +21,7 @@
             getopt
             coreutils
             ncurses
+            jq
             nixWatchBin
             ;
         };
