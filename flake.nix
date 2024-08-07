@@ -30,7 +30,6 @@
             nil
             nixpkgs-fmt
           ] ++ nix-watch.devTools;
-          NIX_WATCH_DEBUG=true;
         };
         formatter = pkgs.nixpkgs-fmt;
       });
