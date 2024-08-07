@@ -28,7 +28,7 @@ let
             ${echo} "    --postpone          Postpone first run until a file changes"
             ${echo} ""
             ${echo} "OPTIONS:"
-            ${echo} "    -x, --exec <cmd>...           Nix command(s) to execute on changes [default: \"flake check\"]."
+            ${echo} "    -x, --exec <cmd>              Nix command to execute on changes [default: \"nix flake check\"]."
             ${echo} "    -s, --shell <cmd>...          Shell command(s) to execute on changes."
             ${echo} "    -i, --ignore <pattern>...     Ignore a regex pattern [default: ["result*" ".*\.git"]]"
             ${echo} "    -L, --print-build-logs        Print full build logs on standard error, equal to including the nix '-L' option."
@@ -175,6 +175,11 @@ let
                 COMMAND="''${DEFAULT_COMMAND[@]}"
             fi
         else
+            if [[ ! "''${COMMAND[*]}" =~ ^nix ]]; then
+                local with_prefix=(nix)
+                with_prefix+=("''${COMMAND[@]}")
+                COMMAND=("''${with_prefix[@]}")
+            fi
             process_command
         fi
         if [ "$PRINT_BUILD_LOGS" == true ]; then
