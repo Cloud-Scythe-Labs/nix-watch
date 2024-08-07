@@ -210,16 +210,20 @@ let
         fi
         debug "Watching directory: ''${ANSI_BLUE}$WATCH_DIR''${ANSI_RESET}"
 
+        if [[ "$CLEAR" == false && -n "$NIX_WATCH_CLEAR" ]]; then
+            CLEAR=$(convert_int_to_bool $NIX_WATCH_CLEAR)
+        fi
+
+        if [[ "$IGNORE_NOTHING" == false && -n "$NIX_WATCH_IGNORE_NOTHING" ]]; then
+            IGNORE_NOTHING=$(convert_int_to_bool $NIX_WATCH_IGNORE_NOTHING)
+        fi
+        
         if [ "$IGNORE_NOTHING" == true ]; then
             IGNORE_PATTERNS=()
         fi
         ignore_patterns="[''${IGNORE_PATTERNS[@]}]"
         debug "The following patterns will be ignored: ''${ANSI_BLUE}$ignore_patterns''${ANSI_RESET}"
 
-        if [[ "$CLEAR" == false && -n "$NIX_WATCH_CLEAR" ]]; then
-            CLEAR=$(convert_int_to_bool $NIX_WATCH_CLEAR)
-        fi
-        
         if [[ "$DEBUG" == false && -n "$NIX_WATCH_DEBUG" ]]; then
             DEBUG=$(convert_int_to_bool $NIX_WATCH_DEBUG)
         fi
