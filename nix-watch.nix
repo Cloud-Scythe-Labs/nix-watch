@@ -216,6 +216,10 @@ let
         ignore_patterns="[''${IGNORE_PATTERNS[@]}]"
         debug "The following patterns will be ignored: ''${ANSI_BLUE}$ignore_patterns''${ANSI_RESET}"
 
+        if [[ "$CLEAR" == false && -n "$NIX_WATCH_CLEAR" ]]; then
+            CLEAR=$(convert_int_to_bool $NIX_WATCH_CLEAR)
+        fi
+        
         if [[ "$DEBUG" == false && -n "$NIX_WATCH_DEBUG" ]]; then
             DEBUG=$(convert_int_to_bool $NIX_WATCH_DEBUG)
         fi
