@@ -1,0 +1,49 @@
+name: Pull Request
+on:
+  pull_request:
+    branches:
+      - master
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  # Contains checks for not only nix flake errors but also the rust derivations
+  # built by the flake, e.g. cargo fmt, cargo deny check, cargo audit, etc.
+  #
+  # This can be extended, and these checks and their tools are available locally.
+  nix-flake-check:
+    name: Nix Flake Check
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+      - run: nix flake check --all-systems -L
+
+  nix-flake-devShell-check:
+    name: Nix devShell Check
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix develop
+
+  nix-flake-fmt-check:
+    name: Nix Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix fmt --accept-flake-config -- --check .
