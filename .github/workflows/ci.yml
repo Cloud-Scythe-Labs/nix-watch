@@ -10,10 +10,6 @@ concurrency:
 permissions: read-all
 
 jobs:
-  # Contains checks for not only nix flake errors but also the rust derivations
-  # built by the flake, e.g. cargo fmt, cargo deny check, cargo audit, etc.
-  #
-  # This can be extended, and these checks and their tools are available locally.
   nix-flake-check:
     name: Nix Flake Check
     runs-on: ubuntu-latest
