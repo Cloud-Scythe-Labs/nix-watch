@@ -59,24 +59,27 @@ let
             local input="$1"
             ${echo} "''${input//\"/}"
         }
-        # Function to process and prepare the command array
-        process_command() {
-            local processed_command=()
+        # Processes command line arguments that may be white space separated strings
+        process_args() {
+            local raw_args="$1"
+            local processed_args=()
         
-            # Loop through each element in the COMMAND array
-            for cmd_str in "''${COMMAND[@]}"; do
+            # Loop through each element in the raw_args array
+            for cmd_str in "''${raw_args[@]}"; do
                 # Check if the string contains spaces
                 if [[ "$cmd_str" == *" "* ]]; then
-                    # Split the string by spaces and append to the processed_command array
+                    # Split the string by spaces and append to the processed_args array
                     IFS=' ' read -r -a split_args <<< "$cmd_str"
-                    processed_command+=("''${split_args[@]}")
+                    processed_args+=("''${split_args[@]}")
                 else
                     # If no spaces, just append the string
-                    processed_command+=("$cmd_str")
+                    processed_args+=("$cmd_str")
                 fi
             done
-            COMMAND=("''${processed_command[@]}")
+            ${echo} "''${processed_args[@]}"
         }
+        # Boolean expressions can be true/false or 1/0, this handles conversion from integer values so that
+        # the value captured from the environment will always be true/false.
         convert_int_to_bool() {
             local maybe_int="$1"
 
@@ -172,6 +175,9 @@ let
 
         # Remaining arguments are considered as shell arguments
         SHELL_ARGS+=("$@")
+        if [[ -z "''${SHELL_ARGS[@]}" ]]; then
+            SHELL_ARGS=$(process_args "''${NIX_WATCH_SHELL_ARGS[@]}")
+        fi
         shell_args="[''${SHELL_ARGS[@]}]"
         debug "The following arguments will be passed to shell: ''${ANSI_BLUE}$shell_args''${ANSI_RESET}"
 
@@ -180,8 +186,7 @@ let
         if [[ -z ''${COMMAND[@]} ]]; then
             # If COMMAND is empty, check for env var or use default
             if [[ -n "$NIX_WATCH_COMMAND" ]]; then
-                COMMAND=("$NIX_WATCH_COMMAND")
-                process_command
+                COMMAND=$(process_args "''${NIX_WATCH_COMMAND[@]}")
             else
                 COMMAND="''${DEFAULT_COMMAND[@]}"
             fi
@@ -191,7 +196,7 @@ let
                 with_prefix+=("''${COMMAND[@]}")
                 COMMAND=("''${with_prefix[@]}")
             fi
-            process_command
+            COMMAND=$(process_args "''${COMMAND[@]}")
         fi
         if [ "$PRINT_BUILD_LOGS" == true ]; then
             COMMAND+=("-L")
