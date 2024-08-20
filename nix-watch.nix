@@ -100,7 +100,7 @@ let
         NO_RESTART=false
         POSTPONE=false
         WATCH_DIR="."
-        IGNORE_PATTERNS=("result*" ".*\.git")
+        IGNORE_PATTERNS=()
         PRINT_BUILD_LOGS=false
         DEBUG=false
 
@@ -219,12 +219,16 @@ let
             CLEAR=$(convert_int_to_bool $NIX_WATCH_CLEAR)
         fi
 
+        DEFAULT_IGNORE_PATTERNS=("result*" ".*\.git")
         if [[ "$IGNORE_NOTHING" == false && -n "$NIX_WATCH_IGNORE_NOTHING" ]]; then
             IGNORE_NOTHING=$(convert_int_to_bool $NIX_WATCH_IGNORE_NOTHING)
         fi
-        
         if [ "$IGNORE_NOTHING" == true ]; then
             IGNORE_PATTERNS=()
+        elif [[ -n "$NIX_WATCH_IGNORE_PATTERNS" ]]; then
+            IGNORE_PATTERNS+=($(process_args "''${NIX_WATCH_IGNORE_PATTERNS[@]}"))
+        else
+            IGNORE_PATTERNS+=("''${DEFAULT_IGNORE_PATTERNS[@]}")
         fi
         ignore_patterns="[''${IGNORE_PATTERNS[@]}]"
         debug "The following patterns will be ignored: ''${ANSI_BLUE}$ignore_patterns''${ANSI_RESET}"
