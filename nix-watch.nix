@@ -198,7 +198,10 @@ let
             fi
             COMMAND=$(process_args "''${COMMAND[@]}")
         fi
-        if [ "$PRINT_BUILD_LOGS" == true ]; then
+        if [[ "$PRINT_BUILD_LOGS" == false && -n "$NIX_WATCH_PRINT_BUILD_LOGS" ]]; then
+            PRINT_BUILD_LOGS=$(convert_int_to_bool $NIX_WATCH_PRINT_BUILD_LOGS)
+        fi
+        if [[ "$PRINT_BUILD_LOGS" == true ]]; then
             COMMAND+=("-L")
         fi
         if [[ -n ''${SHELL_ARGS[@]} ]]; then
