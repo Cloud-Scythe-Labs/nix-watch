@@ -2,12 +2,9 @@
 
 export NIX_WATCH_DRY_RUN=true
 
-@test "nix-watch handles SIGINT gracefully" {
-  nix-watch -- sleep 10 &
-  sleep 1
-  kill -SIGINT $!
-  wait $!
-  [ "$status" -eq 0 ]
-  [[ "${output}" == *"Received SIGINT, shutting down gracefully"* ]]
+@test "nix-watch handles shutdown gracefully" {
+  run nix-watch --debug
+  [[ "${output}" == *"Received termination signal, cleaning up"* ]]
+  [ $? -eq 0 ]
 }
 

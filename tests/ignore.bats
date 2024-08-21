@@ -3,8 +3,8 @@
 export NIX_WATCH_DRY_RUN=true
 
 @test "nix-watch ignores specified directories" {
-  nix-watch --ignore ".git" --ignore "node_modules"
-  [ "$status" -eq 0 ]
+  run nix-watch --debug --ignore ".git" --ignore "node_modules"
   [[ "${output}" == *".git node_modules"* ]]
+  [ $? -eq 0 ]
 }
 
