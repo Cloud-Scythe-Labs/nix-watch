@@ -103,6 +103,7 @@ let
         IGNORE_PATTERNS=("result*" ".*\.git")
         PRINT_BUILD_LOGS=false
         DEBUG=false
+        DRY_RUN=$(convert_int_to_bool "$NIX_WATCH_DRY_RUN")
 
         # Parse command-line options using getopt
         options=$(${getopt'} -o x:s:C:i:chL --long clear,help,ignore-nothing,debug,no-restart,postpone,exec:,shell:,workdir:,ignore:,print-build-logs -n "nix-watch" -- "$@")
@@ -325,6 +326,9 @@ let
                 # Save the PID to the PID_FILE
                 ${echo} $command_pid > "$PID_FILE"
                 ${echo} -e "[''${ANSI_RED}nix-watch''${ANSI_RESET} '$WATCH_DIR']: ''${ANSI_BLUE}''${COMMAND[*]}''${ANSI_RESET} ''${ANSI_GREEN}(PID: $command_pid)''${ANSI_RESET}"
+                if [[ "$DRY_RUN" == true ]]; then
+                    wait $command_pid
+                fi
             fi
         }
 
@@ -359,16 +363,22 @@ let
         init_lock_file
         debug "Initialized lock file: ''${ANSI_BLUE}$(cat $LOCK_FILE)''${ANSI_RESET}"
 
-        if [ "$POSTPONE" == false ]; then
-            debug "Postpone flag was unset, attempting to run command."
-            # Run the command on start, then wait so fswatch doesn't think
-            # that changes were made which causing a second run_command to trigger
-            run_command "$WATCH_DIR" & sleep 1
-        fi
+        if [[ "$DRY_RUN" == true ]]; then
+            debug "Dry run is set, running once then shutting down."
+            run_command "$WATCH_DIR"
+            shutdown
+        else
+            if [ "$POSTPONE" == false ]; then
+                debug "Postpone flag was unset, attempting to run command."
+                # Run the command on start, then wait so fswatch doesn't think
+                # that changes were made which causing a second run_command to trigger
+                run_command "$WATCH_DIR" & sleep 1
+            fi
 
-        while true; do
-            nix_watch
-        done
+            while true; do
+                nix_watch
+            done
+        fi
   '';
 in
 {

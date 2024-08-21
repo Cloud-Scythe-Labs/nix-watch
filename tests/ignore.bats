@@ -1,8 +1,10 @@
 #!/usr/bin/env bats
 
+export NIX_WATCH_DRY_RUN=true
+
 @test "nix-watch ignores specified directories" {
-  timeout 2 nix-watch --ignore ".git" --ignore "node_modules"
-  [ "$status" -eq 124 ]
+  nix-watch --ignore ".git" --ignore "node_modules"
+  [ "$status" -eq 0 ]
   [[ "${output}" == *".git node_modules"* ]]
 }
 
