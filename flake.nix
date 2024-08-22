@@ -25,14 +25,7 @@
 
             buildPhase = ''
               runHook preBuild
-              ${pkgs.bats}/bin/bats ${tests.help}
-              ${pkgs.bats}/bin/bats ${tests.exec}
-              ${pkgs.bats}/bin/bats ${tests.ignore}
-              ${pkgs.bats}/bin/bats ${tests.shutdown}
-              ${pkgs.bats}/bin/bats ${tests.postpone}
-              ${pkgs.bats}/bin/bats ${tests.no-restart}
-              ${pkgs.bats}/bin/bats ${tests.shell-args}
-              ${pkgs.bats}/bin/bats ${tests.workdir}
+              ${pkgs.bats}/bin/bats ${tests.suite}
               runHook postBuild
             '';
             installPhase = ''
