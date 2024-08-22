@@ -13,5 +13,4 @@ writeTextFile {
         [ $? -eq 0 ]
     }
   '';
-  destination = "/nix-watch-bats/${name}";
 }

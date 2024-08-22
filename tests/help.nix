@@ -13,5 +13,4 @@ writeTextFile {
         [ "''${lines[0]}" = "USAGE:" ]
     }
   '';
-  destination = "/nix-watch-bats/${name}";
 }
