@@ -244,6 +244,7 @@ let
         if [[ "$NO_RESTART" == false && -n "$NIX_WATCH_NO_RESTART" ]]; then
             NO_RESTART=$(convert_int_to_bool $NIX_WATCH_NO_RESTART)
         fi
+        debug "NO_RESTART=$NO_RESTART"
 
         if [[ "$POSTPONE" == false && -n "$NIX_WATCH_POSTPONE" ]]; then
             POSTPONE=$(convert_int_to_bool $NIX_WATCH_POSTPONE)
@@ -372,7 +373,12 @@ let
 
         if [[ "$DRY_RUN" == true ]]; then
             debug "Dry run is set, running once then shutting down."
-            run_command "$WATCH_DIR"
+            if [ "$POSTPONE" == false ]; then
+                debug "Postpone flag was unset, attempting to run command."
+                run_command "$WATCH_DIR"
+            else
+                debug "Postpone flag was set, exiting without running command."
+            fi
             shutdown
         else
             if [ "$POSTPONE" == false ]; then

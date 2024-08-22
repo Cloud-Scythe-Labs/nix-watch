@@ -1,5 +1,5 @@
 { writeText, nixWatchBin, bats }:
-writeText "ignore.bats" ''
+writeText "shutdown.bats" ''
   #!/usr/bin/env ${bats}/bin/bats
 
   @test "nix-watch handles shutdown gracefully" {
