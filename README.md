@@ -50,11 +50,13 @@ OPTIONS:
     VARIABLE=TYPE                          POSSIBLE VALUES
     NIX_WATCH_COMMAND=string               A string representation of a nix command, for example: `"build"`. This is subject to change.
     NIX_WATCH_SHELL_ARGS=string            A string representation of a command, for example: `"nix build && ls"`. This is subject to change.
-    NIX_WATCH_IGNORE_PATTERNS=string       A space-separated string representation of regex patterns to ignore, for example `"result* target/"`. This is subject to change.
+    NIX_WATCH_IGNORE_PATTERNS=string       A space-separated string representation of regex patterns to ignore, for example `"result* target/"`. Patterns are cumulative. This is subject to change.
     NIX_WATCH_PRINT_BUILD_LOGS=bool,int    `1`, `0`, `true` or `false`, respectively.
 ```
 
 ### Example Declaration
+
+For use with a `flake.nix` file that consumes `nix-watch` as an input:
 
 ```nix
 {
