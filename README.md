@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/28a6b128-6297-46c6-a47b-d93e86af96b4
 
 `nix-watch` is inspired by [`cargo-watch`](https://crates.io/crates/cargo-watch), and can do most things it can do.
 
-```nix
+```sh
 USAGE:
     /nix/store/yggqx3ff7q04iy202s6bszw860mbqc21-nix-watch/bin/nix-watch [FLAGS] [OPTIONS]
 
@@ -52,8 +52,11 @@ OPTIONS:
     NIX_WATCH_SHELL_ARGS=string            A string representation of a command, for example: `"nix build && ls"`. This is subject to change.
     NIX_WATCH_IGNORE_PATTERNS=string       A space-separated string representation of regex patterns to ignore, for example `"result* target/"`. This is subject to change.
     NIX_WATCH_PRINT_BUILD_LOGS=bool,int    `1`, `0`, `true` or `false`, respectively.
+```
 
-EXAMPLE DECLARATION:
+### Example Declaration
+
+```nix
 {
   # ...
   outputs = @inputs{ ... }: {
