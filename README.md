@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/28a6b128-6297-46c6-a47b-d93e86af96b4
 
 `nix-watch` is inspired by [`cargo-watch`](https://crates.io/crates/cargo-watch), and can do most things it can do.
 
-```sh
+```nix
 USAGE:
     /nix/store/yggqx3ff7q04iy202s6bszw860mbqc21-nix-watch/bin/nix-watch [FLAGS] [OPTIONS]
 
@@ -54,7 +54,6 @@ OPTIONS:
     NIX_WATCH_PRINT_BUILD_LOGS=bool,int    `1`, `0`, `true` or `false`, respectively.
 
 EXAMPLE DECLARATION:
-\`\`\`nix
 {
   # ...
   outputs = @inputs{ ... }: {
@@ -76,7 +75,6 @@ EXAMPLE DECLARATION:
     };
   };
 }
-\`\`\`
 ```
 
 ## Systems
