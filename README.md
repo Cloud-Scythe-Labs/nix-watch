@@ -54,7 +54,7 @@ OPTIONS:
     NIX_WATCH_PRINT_BUILD_LOGS=bool,int    `1`, `0`, `true` or `false`, respectively.
 
 EXAMPLE DECLARATION:
-```nix
+\`\`\`nix
 {
   # ...
   outputs = @inputs{ ... }: {
@@ -76,7 +76,7 @@ EXAMPLE DECLARATION:
     };
   };
 }
-```
+\`\`\`
 ```
 
 ## Systems
