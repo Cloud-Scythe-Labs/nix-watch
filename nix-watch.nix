@@ -11,8 +11,11 @@ let
   nixWatchBin = writeShellScriptBin "nix-watch" ''
         # Define some colors that will help distinguish messages
         ANSI_RED='\033[0;31m'
-        ANSI_GREEN='\033[32m'
+        ANSI_GREEN='\033[0;32m'
+        ANSI_YELLOW='\033[0;33m'
         ANSI_BLUE='\033[0;34m'
+        ANSI_MAGENTA='\033[0;35m'
+        ANSI_CYAN='\033[0;36m'
         ANSI_RESET='\033[0m'
 
         usage() {
@@ -22,21 +25,67 @@ let
             ${echo} "FLAGS:"
             ${echo} "    -c, --clear         Clear the screen before each run."
             ${echo} "    -h, --help          Display this message."
-            ${echo} "    --ignore-nothing    Ignore nothing [patterns ignored by default: ["result*" ".*\.git"]]."
+            ${echo} "    --ignore-nothing    Ignore nothing [patterns ignored by default: [\"result*\" \".*\.git\"]]."
             ${echo} "    --debug             Show debug output."
             ${echo} "    --no-restart        Don't restart command while it's still running."
             ${echo} "    --postpone          Postpone first run until a file changes"
             ${echo} ""
             ${echo} "OPTIONS:"
-            ${echo} "    -x, --exec <cmd>              Nix command to execute on changes [default: \"nix flake check\"]."
-            ${echo} "    -s, --shell <cmd>...          Shell command(s) to execute on changes."
-            ${echo} "    -i, --ignore <pattern>...     Ignore a regex pattern [default: ["result*" ".*\.git"]]"
-            ${echo} "    -L, --print-build-logs        Print full build logs on standard error, equal to including the nix '-L' option."
-            ${echo} "    -C, --workdir <workdir>       Change working directory before running command [default: current directory]"
+            ${echo} "    -x, --exec <cmd>             Nix command to execute on changes [default: \"nix flake check\"]."
+            ${echo} "    -s, --shell <cmd>...         Shell command(s) to execute on changes."
+            ${echo} "    -i, --ignore <pattern>...    Ignore a regex pattern [default: [\"result*\" \".*\.git\"]]"
+            ${echo} "    -L, --print-build-logs       Print full build logs on standard error, equal to including the nix '-L' option."
+            ${echo} "    -C, --workdir <workdir>      Change working directory before running command [default: current directory]"
             ${echo} ""
             ${echo} "Nix commands (-x) are always executed before shell commands (-s). You can use the \`-- command\` style instead, note you'll need to use full commands, it won't prefix \`nix\` for you.
 
     By default, the workspace directories of your project and all local dependencies are watched, except for the result/ and .git/ folders."
+            ${echo} ""
+            ${echo} "ENVIRONMENT:"
+            ${echo} "    Environment variables can be delcared through Nix to change the default behavior of \`nix-watch\`."
+            ${echo} "    In general, unless specified below, arguments passed via command line override environment variable declarations."
+            ${echo} "    All environment variables are unset by default. Refer to the above command line flags and options for usage."
+            ${echo} ""
+            ${echo} "FLAGS:"
+            ${echo} "    VARIABLE=TYPE                        POSSIBLE VALUES"
+            ${echo} "    NIX_WATCH_CLEAR=bool,int             \`1\`, \`0\`, \`true\` or \`false\`, respectively."
+            ${echo} "    NIX_WATCH_IGNORE_NOTHING=bool,int    \`1\`, \`0\`, \`true\` or \`false\`, respectively."
+            ${echo} "    NIX_WATCH_DEBUG=bool,int             \`1\`, \`0\`, \`true\` or \`false\`, respectively."
+            ${echo} "    NIX_WATCH_NO_RESTART=bool,int        \`1\`, \`0\`, \`true\` or \`false\`, respectively."
+            ${echo} "    NIX_WATCH_POSTPONE=bool,int          \`1\`, \`0\`, \`true\` or \`false\`, respectively."
+            ${echo} ""
+            ${echo} "OPTIONS:"
+            ${echo} "    VARIABLE=TYPE                          POSSIBLE VALUES"
+            ${echo} "    NIX_WATCH_COMMAND=string               A string representation of a nix command, for example: \`\"build\"\`. This is subject to change."
+            ${echo} "    NIX_WATCH_SHELL_ARGS=string            A string representation of a command, for example: \`\"nix build && ls\"\`. This is subject to change."
+            ${echo} "    NIX_WATCH_IGNORE_PATTERNS=string       A space-separated string representation of regex patterns to ignore, for example \`\"result* target/\"\`. Patterns are cumulative. This is subject to change."
+            ${echo} "    NIX_WATCH_PRINT_BUILD_LOGS=bool,int    \`1\`, \`0\`, \`true\` or \`false\`, respectively."
+            ${echo} ""
+            ${echo} "EXAMPLE DECLARATION:"
+            ${echo} "For use with a \`flake.nix\` file that consumes \`nix-watch\` as an input:"
+            ${echo} -e "\`\`\`''${ANSI_BLUE}nix''${ANSI_RESET}"
+            ${echo} -e "{"
+            ${echo} -e "  ''${ANSI_CYAN}# ...''${ANSI_RESET}"
+            ${echo} -e "  ''${ANSI_BLUE}outputs''${ANSI_RESET} = @''${ANSI_YELLOW}inputs''${ANSI_RESET}{ ... }: {"
+            ${echo} -e "    ''${ANSI_BLUE}pkgs''${ANSI_RESET} = inputs.nixpkgs.legacyPackages.\''${system};"
+            ${echo} -e "    ''${ANSI_BLUE}devShells''${ANSI_RESET}.''${ANSI_BLUE}\''${system}''${ANSI_RESET}.''${ANSI_BLUE}default''${ANSI_RESET} = pkgs.''${ANSI_YELLOW}mkShell''${ANSI_RESET} {"
+            ${echo} -e "      ''${ANSI_BLUE}buildInputs''${ANSI_RESET} = ''${ANSI_RED}with''${ANSI_RESET} pkgs; ["
+            ${echo} -e "        ''${ANSI_CYAN}# ...''${ANSI_RESET}"
+            ${echo} -e "      ] ''${ANSI_MAGENTA}++''${ANSI_RESET} inputs.nix-watch.nix-watch.\''${system}.''${ANSI_BLUE}devTools''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_CLEAR''${ANSI_RESET}=''${ANSI_MAGENTA}true''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_IGNORE_NOTHING''${ANSI_RESET}=''${ANSI_MAGENTA}0''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_DEBUG''${ANSI_RESET}=''${ANSI_MAGENTA}false''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_NO_RESTART''${ANSI_RESET}=''${ANSI_MAGENTA}1''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_POSTPONE''${ANSI_RESET}=''${ANSI_YELLOW}\"true\"''${ANSI_RESET};"
+            ${echo} -e ""
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_COMMAND''${ANSI_RESET}=''${ANSI_YELLOW}\"build\"''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_SHELL_ARGS''${ANSI_RESET}=''${ANSI_YELLOW}\"nix fmt --accept-flake-config -- --check .\"''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_IGNORE_PATTERNS''${ANSI_RESET}=''${ANSI_YELLOW}\"target/ .*\.gitmodules\"''${ANSI_RESET};"
+            ${echo} -e "      ''${ANSI_BLUE}NIX_WATCH_PRINT_BUILD_LOGS''${ANSI_RESET}=''${ANSI_MAGENTA}true''${ANSI_RESET};"
+            ${echo} -e "    };"
+            ${echo} -e "  };"
+            ${echo} -e "}"
+            ${echo} -e "\`\`\`"
 
             exit 1
         }
