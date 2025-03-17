@@ -1,0 +1,13 @@
+[package]
+name = "nix-watch"
+description = "Nix Watch watches over your project's source for changes, and runs Nix commands when they occur."
+version = "0.1.0"
+license = "BSD-2-Clause"
+readme = "README.md"
+authors = ["CloudScytheLabs <cloudscythelabs@gmail.com>"]
+edition = "2021"
+publish = false
+
+[dependencies]
+clap = { version = "4.5", features = ["derive", "env"] }
+env_logger = "0.11"
