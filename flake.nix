@@ -115,6 +115,7 @@
         packages = with pkgs; [
           nil
           nixpkgs-fmt
+          bacon
         ];
       };
     });

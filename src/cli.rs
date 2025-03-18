@@ -28,13 +28,6 @@ pub(crate) struct Flags {
 
     #[arg(
         long,
-        env = "NIX_WATCH_IGNORE_NOTHING",
-        help = "Exclude all ignore patterns"
-    )]
-    pub(crate) ignore_nothing: bool,
-
-    #[arg(
-        long,
         env = "NIX_WATCH_NO_RESTART",
         help = "Don't restart command while it's still running"
     )]
@@ -64,7 +57,7 @@ pub(crate) struct Options {
         long,
         short = 'x',
         value_name = "NIX_COMMAND",
-        env = "NIX_WATCH_COMMAND",
+        env = "NIX_WATCH_COMMANDS",
         action = ArgAction::Append,
         value_hint = ValueHint::CommandString,
         default_values = vec!["nix flake check"],
@@ -76,7 +69,7 @@ pub(crate) struct Options {
         long,
         short = 's',
         value_name = "SHELL_COMMAND",
-        env = "NIX_WATCH_SHELL_ARGS",
+        env = "NIX_WATCH_SHELL_COMMANDS",
         action = ArgAction::Append,
         value_hint = ValueHint::CommandString,
         help = "Shell command(s) to execute on changes"
@@ -85,22 +78,10 @@ pub(crate) struct Options {
 
     #[arg(
         long,
-        short = 'i',
-        value_name = "REGEX",
-        env = "NIX_WATCH_IGNORE_PATTERNS",
-        action = ArgAction::Append,
-        default_values = vec![r#"result*"#, r#".*\.git"#],
-        help = "Ignore a list of regex patterns"
-    )]
-    pub(crate) ignore: Vec<String>,
-
-    #[arg(
-        long,
-        short = 'C',
+        short = 'w',
         value_name = "DIR_PATH",
-        env = "NIX_WATCH_WORKDIR",
         value_hint = ValueHint::DirPath,
-        help = "Change working directory before running command [default: current directory]"
+        help = "The project working directory"
     )]
     pub(crate) workdir: Option<std::path::PathBuf>,
 
