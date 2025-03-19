@@ -56,10 +56,15 @@
 
       cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-      nix-watch = craneLib.buildPackage (commonArgs // {
+      buildNixWatch = config: craneLib.buildPackage (commonArgs // {
         inherit cargoArtifacts;
         doCheck = false;
+
+        env = {
+          NIX_WATCH_NIX_BIN = "${config.nix.package}/bin/${config.nix.name}";
+        };
       });
+      nix-watch = buildNixWatch (import ./lib { inherit pkgs lib; }).config;
     in
     {
       checks = {

@@ -14,7 +14,7 @@ use crate::{
 mod cli;
 mod util;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let NixWatch { flags, opts } = NixWatch::parse();
 
     let Options {
